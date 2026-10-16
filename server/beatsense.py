@@ -1,15 +1,15 @@
-"""Serveur local BeatSense : récupère l'audio des vidéos YouTube pour l'extension.
+"""BeatSense local server: fetches the audio of YouTube videos for the extension.
 
-L'analyse BPM / tonalité se fait dans l'extension (essentia.js) ; ce serveur ne fait que
-ce qu'une extension ne peut pas faire : lancer yt-dlp et écrire dans le dossier des prods.
+The BPM / key analysis happens in the extension (essentia.js); this server only does
+what an extension cannot: run yt-dlp and write to the beats folder.
 
-Écoute uniquement sur 127.0.0.1 et refuse les requêtes venant d'une page web
-(origine http(s)://), pour qu'un site quelconque ne puisse pas le piloter.
+Listens on 127.0.0.1 only and rejects requests coming from a web page
+(http(s):// origin), so that no random website can drive it.
 
-Se met à jour tout seul : yt-dlp une fois par jour, et ce fichier depuis GitHub
-(sauf quand il tourne depuis un clone git, pour ne pas écraser le travail en cours).
-Tient aussi à jour le dossier de l'extension Chrome (chargée "non empaquetée", Chrome ne
-la met pas à jour lui-même) : l'extension voit la nouvelle version via /health et se recharge.
+Updates itself: yt-dlp once a day, and this file from GitHub
+(except when running from a git clone, to avoid overwriting work in progress).
+Also keeps the Chrome extension folder up to date (loaded "unpacked", Chrome does not
+update it by itself): the extension sees the new version via /health and reloads.
 """
 
 import hashlib
@@ -26,7 +26,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-# yt-dlp cherche deno (signatures YouTube) dans le PATH : celui du venv est à côté de python
+# yt-dlp looks for deno (YouTube signatures) in the PATH: the venv one sits next to python
 os.environ["PATH"] = str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
 
 import yt_dlp  # noqa: E402
@@ -40,7 +40,7 @@ LATEST_RELEASE_URL = "https://api.github.com/repos/hugomyb/beatsense/releases/la
 CHROME_ASSET = "beatsense-chrome.zip"
 CHECK_EVERY = 6 * 3600
 CACHE_TTL = 7 * 24 * 3600
-MAX_DURATION = 20 * 60  # secondes : on refuse les mix / lives de plusieurs heures
+MAX_DURATION = 20 * 60  # seconds: we refuse multi-hour mixes / livestreams
 
 EXTENSION_ORIGINS = ("moz-extension://", "chrome-extension://")
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -73,7 +73,7 @@ OUT_DIR = Path(os.environ.get("BEATSENSE_DIR") or music_dir() / "Prods").expandu
 CACHE_DIR = cache_dir()
 CHROME_DIR = data_dir() / "chrome-extension"
 
-# Un verrou par vidéo : deux clics rapides ne lancent pas deux téléchargements
+# One lock per video: two quick clicks do not start two downloads
 _locks: dict[str, threading.Lock] = {}
 _locks_guard = threading.Lock()
 
@@ -88,7 +88,7 @@ def _ydl_opts(**extra) -> dict:
 
 
 def fetch_audio(video_id: str) -> dict:
-    """Télécharge l'audio en mp3 320k dans le cache (une seule fois par vidéo) et renvoie ses infos."""
+    """Download the audio as 320k mp3 into the cache (once per video) and return its info."""
     with _lock_for(video_id):
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         mp3 = CACHE_DIR / f"{video_id}.mp3"
@@ -100,7 +100,7 @@ def fetch_audio(video_id: str) -> dict:
         with yt_dlp.YoutubeDL(_ydl_opts()) as ydl:
             info = ydl.extract_info(url, download=False)
         if (info.get("duration") or 0) > MAX_DURATION:
-            raise ValueError(f"Vidéo trop longue ({info['duration'] // 60} min), max {MAX_DURATION // 60} min")
+            raise ValueError(f"Video too long ({info['duration'] // 60} min), max {MAX_DURATION // 60} min")
 
         opts = _ydl_opts(
             outtmpl=str(CACHE_DIR / f"{video_id}.%(ext)s"),
@@ -128,7 +128,7 @@ def safe_filename(name: str) -> str:
 def save_to_library(video_id: str, bpm, key_label: str) -> dict:
     meta = fetch_audio(video_id)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    # BPM et tonalité dans le nom : visibles directement dans le navigateur de FL Studio
+    # BPM and key in the name: visible right in FL Studio's browser
     tag = f" [{int(bpm)} BPM {safe_filename(key_label)}]" if bpm else ""
     dest = OUT_DIR / (safe_filename(meta["title"] + tag) + ".mp3")
     if not dest.exists():
@@ -153,10 +153,10 @@ def clean_cache():
             f.unlink(missing_ok=True)
 
 
-# --- Mises à jour automatiques -------------------------------------------------------
+# --- Automatic updates -------------------------------------------------------
 
 def update_ytdlp() -> bool:
-    """Met yt-dlp à jour (YouTube le casse régulièrement). Renvoie True si quelque chose a changé."""
+    """Update yt-dlp (YouTube breaks it regularly). Return True if something changed."""
     stamp = CACHE_DIR / ".ytdlp-updated"
     if stamp.exists() and time.time() - stamp.stat().st_mtime < 24 * 3600:
         return False
@@ -166,7 +166,7 @@ def update_ytdlp() -> bool:
         creationflags=subprocess.CREATE_NO_WINDOW if WINDOWS else 0,
     )
     if res.returncode != 0:
-        log(f"mise à jour yt-dlp échouée : {res.stderr.strip()[-300:]}")
+        log(f"yt-dlp update failed: {res.stderr.strip()[-300:]}")
         return False
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     stamp.touch()
@@ -181,7 +181,7 @@ def update_self() -> bool:
     me = Path(__file__).resolve()
     if hashlib.sha256(remote).digest() == hashlib.sha256(me.read_bytes()).digest():
         return False
-    compile(remote, str(me), "exec")  # on ne remplace pas par un fichier cassé
+    compile(remote, str(me), "exec")  # never replace with a broken file
     tmp = me.with_suffix(".new")
     tmp.write_bytes(remote)
     tmp.replace(me)
@@ -200,7 +200,7 @@ def _version_tuple(v: str) -> tuple:
 
 
 def update_chrome_extension():
-    """Remplace le dossier de l'extension Chrome par celui de la dernière release, si plus récente."""
+    """Replace the Chrome extension folder with the one from the latest release, if newer."""
     req = urllib.request.Request(LATEST_RELEASE_URL, headers={"Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=30) as r:
         release = json.load(r)
@@ -217,22 +217,22 @@ def update_chrome_extension():
         tmp.write_bytes(r.read())
     with zipfile.ZipFile(tmp) as z:
         new_files = {Path(n) for n in z.namelist() if not n.endswith("/")}
-        # On écrit dans le dossier existant plutôt que de le remplacer : c'est ce chemin que Chrome a chargé
+        # Write into the existing folder rather than replacing it: this is the path Chrome loaded
         z.extractall(CHROME_DIR)
     for f in CHROME_DIR.rglob("*"):
         if f.is_file() and f.relative_to(CHROME_DIR) not in new_files:
             f.unlink()
     tmp.unlink()
-    log(f"extension Chrome mise à jour : {current} -> {latest}")
+    log(f"Chrome extension updated: {current} -> {latest}")
 
 
 def restart(httpd: ThreadingHTTPServer):
-    log("mise à jour installée, redémarrage")
+    log("update installed, restarting")
     httpd.shutdown()
     httpd.server_close()
     if not WINDOWS:
-        os._exit(75)  # systemd (Restart=always) relance le service
-    # Sous Windows rien ne nous relance : on démarre la nouvelle version nous-mêmes
+        os._exit(75)  # systemd (Restart=always) restarts the service
+    # On Windows nothing restarts us: we start the new version ourselves
     subprocess.Popen([sys.executable, "-I", str(Path(__file__).resolve())], creationflags=subprocess.DETACHED_PROCESS)
     os._exit(0)
 
@@ -245,11 +245,11 @@ def updater(httpd: ThreadingHTTPServer):
             clean_cache()
             try:
                 update_chrome_extension()
-            except Exception as e:  # noqa: BLE001 - ne doit pas bloquer les autres mises à jour
-                log(f"mise à jour de l'extension Chrome impossible : {e!r}")
+            except Exception as e:  # noqa: BLE001 - must not block the other updates
+                log(f"Chrome extension update failed: {e!r}")
             changed = update_self() | update_ytdlp()
-        except Exception as e:  # noqa: BLE001 - pas de réseau, GitHub en panne... on réessaiera plus tard
-            log(f"vérification des mises à jour impossible : {e!r}")
+        except Exception as e:  # noqa: BLE001 - no network, GitHub down... we will retry later
+            log(f"update check failed: {e!r}")
         if changed:
             restart(httpd)
         time.sleep(CHECK_EVERY)
@@ -258,7 +258,7 @@ def updater(httpd: ThreadingHTTPServer):
 # --- HTTP ---------------------------------------------------------------------------
 
 def log(msg: str):
-    if sys.stderr:  # None sous pythonw.exe (Windows, sans console)
+    if sys.stderr:  # None under pythonw.exe (Windows, no console)
         print(f"[beatsense] {msg}", file=sys.stderr, flush=True)
 
 
@@ -266,8 +266,8 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "BeatSense/2"
 
     def _origin_ok(self) -> bool:
-        # Un navigateur envoie toujours Origin sur un POST cross-origin : une origine absente
-        # vient d'un process local (curl...), une origine http(s) d'une page web.
+        # A browser always sends Origin on a cross-origin POST: a missing origin
+        # comes from a local process (curl...), an http(s) origin from a web page.
         origin = self.headers.get("Origin")
         return origin is None or origin.startswith(EXTENSION_ORIGINS)
 
@@ -287,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         if not self._origin_ok():
-            return self._send(403, {"error": "origine refusée"})
+            return self._send(403, {"error": "origin rejected"})
         self.send_response(204)
         self._cors()
         self.send_header("Access-Control-Allow-Methods", "GET, POST")
@@ -306,7 +306,7 @@ class Handler(BaseHTTPRequestHandler):
         if m and self._origin_ok():
             mp3 = CACHE_DIR / f"{m[1]}.mp3"
             if not mp3.exists():
-                return self._send(404, {"error": "audio pas encore récupéré"})
+                return self._send(404, {"error": "audio not fetched yet"})
             data = mp3.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "audio/mpeg")
@@ -315,20 +315,20 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
-        self._send(404, {"error": "introuvable"})
+        self._send(404, {"error": "not found"})
 
     def do_POST(self):
         if not self._origin_ok():
-            return self._send(403, {"error": "origine refusée"})
+            return self._send(403, {"error": "origin rejected"})
         try:
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
         except (ValueError, json.JSONDecodeError):
-            return self._send(400, {"error": "JSON invalide"})
+            return self._send(400, {"error": "invalid JSON"})
 
         video_id = str(body.get("video_id", ""))
         if self.path in ("/fetch", "/download") and not VIDEO_ID.match(video_id):
-            return self._send(400, {"error": "video_id invalide"})
+            return self._send(400, {"error": "invalid video_id"})
 
         try:
             if self.path == "/fetch":
@@ -343,10 +343,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(422, {"error": str(e)})
         except yt_dlp.utils.DownloadError as e:
             return self._send(502, {"error": re.sub(r"^ERROR: ", "", str(e))[:300]})
-        except Exception as e:  # noqa: BLE001 - on renvoie l'erreur à l'extension plutôt que de couper la connexion
+        except Exception as e:  # noqa: BLE001 - return the error to the extension rather than dropping the connection
             log(f"{video_id}: {e!r}")
             return self._send(500, {"error": str(e)[:300]})
-        self._send(404, {"error": "introuvable"})
+        self._send(404, {"error": "not found"})
 
     def log_message(self, fmt, *args):
         log(fmt % args)
@@ -356,8 +356,8 @@ if __name__ == "__main__":
     try:
         httpd = ThreadingHTTPServer((HOST, PORT), Handler)
     except OSError:
-        log(f"port {PORT} déjà utilisé : BeatSense tourne sans doute déjà")
+        log(f"port {PORT} already in use: BeatSense is probably already running")
         sys.exit(0)
     threading.Thread(target=updater, args=(httpd,), daemon=True).start()
-    log(f"écoute sur http://{HOST}:{PORT}, prods dans {OUT_DIR}")
+    log(f"listening on http://{HOST}:{PORT}, beats in {OUT_DIR}")
     httpd.serve_forever()

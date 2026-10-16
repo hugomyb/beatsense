@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "BeatSense",
   "version": "1.4.0",
-  "description": "BPM, tonalité et téléchargement des prods directement sur YouTube.",
+  "description": "BPM, key and download for beats, right on YouTube.",
   "browser_specific_settings": {
     "gecko": {
       "id": "beatsense@hugo.local",

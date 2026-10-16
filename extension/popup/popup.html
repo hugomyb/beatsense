@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="popup.css">
@@ -8,33 +8,33 @@
   <header>
     <img src="../icons/icon-48.png" alt="" width="24" height="24">
     <h1>BeatSense</h1>
-    <label class="switch" title="Activer / désactiver sur YouTube">
+    <label class="switch" title="Enable / disable on YouTube">
       <input type="checkbox" id="enabled">
       <span></span>
     </label>
   </header>
 
   <fieldset id="options">
-    <legend>Afficher le panneau</legend>
-    <label><input type="radio" name="show" value="music"> Sur la musique uniquement</label>
-    <label><input type="radio" name="show" value="always"> Sur toutes les vidéos</label>
+    <legend>Show panel</legend>
+    <label><input type="radio" name="show" value="music"> On music only</label>
+    <label><input type="radio" name="show" value="always"> On all videos</label>
   </fieldset>
 
   <fieldset id="options-auto">
-    <legend>Analyser automatiquement</legend>
-    <label><input type="radio" name="auto" value="prods"> Les prods (type beat, instru…)</label>
-    <label><input type="radio" name="auto" value="music"> Toute la musique</label>
-    <label><input type="radio" name="auto" value="off"> Jamais, je clique sur Analyser</label>
+    <legend>Auto-analyze</legend>
+    <label><input type="radio" name="auto" value="prods"> Beats (type beat, instrumental…)</label>
+    <label><input type="radio" name="auto" value="music"> All music</label>
+    <label><input type="radio" name="auto" value="off"> Never, I click Analyze</label>
   </fieldset>
 
   <fieldset>
-    <legend>Notation des tonalités</legend>
-    <label><input type="radio" name="notation" value="both"> Les deux (Ab / G#)</label>
-    <label><input type="radio" name="notation" value="flats"> Bémols (Ab, Db…)</label>
-    <label><input type="radio" name="notation" value="sharps"> Dièses (G#, comme FL Studio)</label>
+    <legend>Key notation</legend>
+    <label><input type="radio" name="notation" value="both"> Both (Ab / G#)</label>
+    <label><input type="radio" name="notation" value="flats"> Flats (Ab, Db…)</label>
+    <label><input type="radio" name="notation" value="sharps"> Sharps (G#, as in FL Studio)</label>
   </fieldset>
 
-  <footer id="server">Serveur : vérification…</footer>
+  <footer id="server">Server: checking…</footer>
 
   <script src="../settings.js"></script>
   <script src="popup.js"></script>

@@ -29,11 +29,11 @@ fetch("http://127.0.0.1:7843/health")
   .then((r) => r.json())
   .then((h) => {
     const footer = document.getElementById("server");
-    footer.textContent = `Serveur connecté — prods dans ${h.dir}`;
+    footer.textContent = `Server connected — beats in ${h.dir}`;
     footer.dataset.state = "ok";
   })
   .catch(() => {
     const footer = document.getElementById("server");
-    footer.textContent = "Serveur injoignable : relance le PC ou la commande d'installation";
+    footer.textContent = "BeatSense server unreachable: restart your computer or rerun the install command";
     footer.dataset.state = "error";
   });

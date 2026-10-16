@@ -1,5 +1,5 @@
-// Service worker Chrome. Il n'a ni décodage audio ni droit à essentia.js : l'analyse passe par
-// un document offscreen (décodage) qui la confie à une page sandbox (essentia.js).
+// Chrome service worker. It has neither audio decoding nor access to essentia.js: the analysis goes
+// through an offscreen document (decoding) that hands it to a sandbox page (essentia.js).
 importScripts("/settings.js", "/core.js");
 
 async function ensureOffscreen() {
@@ -8,10 +8,10 @@ async function ensureOffscreen() {
     await chrome.offscreen.createDocument({
       url: "chrome/offscreen.html",
       reasons: ["WORKERS"],
-      justification: "Décodage et analyse audio (BPM, tonalité)",
+      justification: "Audio decoding and analysis (BPM, key)",
     });
   } catch (e) {
-    // deux analyses lancées en même temps : le document vient d'être créé par l'autre
+    // two analyses started at the same time: the other one just created the document
     if (!(await chrome.offscreen.hasDocument())) throw e;
   }
 }
@@ -20,13 +20,13 @@ listen(
   createActions(async (videoId) => {
     await ensureOffscreen();
     const res = await chrome.runtime.sendMessage({ target: "offscreen", videoId });
-    if (!res?.ok) throw new ServerError(res?.error ?? "Analyse impossible");
+    if (!res?.ok) throw new ServerError(res?.error ?? "Analysis failed");
     return res.data;
   }),
 );
 
-// Mises à jour : Chrome ne met pas à jour une extension non publiée. Le serveur local remplace
-// les fichiers de l'extension par ceux de la dernière release ; il suffit ensuite de la recharger.
+// Updates: Chrome does not update an unpublished extension. The local server replaces the
+// extension files with those of the latest release; the extension then just has to reload.
 const newer = (a, b) => {
   const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
@@ -40,7 +40,7 @@ async function checkUpdate() {
     const { chrome_version } = await (await fetch(`${SERVER}/health`)).json();
     if (chrome_version && newer(chrome_version, chrome.runtime.getManifest().version)) chrome.runtime.reload();
   } catch {
-    // serveur arrêté : on réessaiera à la prochaine alarme
+    // server stopped: we will retry on the next alarm
   }
 }
 

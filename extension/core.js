@@ -1,14 +1,14 @@
-// Code commun Firefox / Chrome : serveur local, décodage audio, cache et actions du panneau.
-// Utilise keyLabel() de settings.js, chargé avant.
-// Firefox le charge dans sa page de fond, Chrome dans son service worker et son document offscreen.
+// Code shared by Firefox and Chrome: local server, audio decoding, cache and panel actions.
+// Uses keyLabel() from settings.js, loaded before.
+// Firefox loads it in its background page, Chrome in its service worker and offscreen document.
 globalThis.browser ??= chrome;
 
 const SERVER = "http://127.0.0.1:7843";
 const SAMPLE_RATE = 44100;
-// Incrémenter quand l'analyse change, pour ne pas resservir d'anciens résultats
+// Increment when the analysis changes, so old results are not served again
 const CACHE_PREFIX = "analysis-v2:";
 
-// Roue Camelot (notation utilisée par Tunebat et les DJ)
+// Camelot wheel (notation used by Tunebat and DJs)
 const CAMELOT = {
   "Ab minor": "1A", "B major": "1B", "Eb minor": "2A", "F# major": "2B",
   "Bb minor": "3A", "C# major": "3B", "F minor": "4A", "Ab major": "4B",
@@ -17,7 +17,7 @@ const CAMELOT = {
   "E minor": "9A", "G major": "9B", "B minor": "10A", "D major": "10B",
   "F# minor": "11A", "A major": "11B", "C# minor": "12A", "E major": "12B",
 };
-// Essentia peut sortir des dièses là où la roue utilise des bémols
+// Essentia may output sharps where the wheel uses flats
 const ENHARMONIC = { "G#": "Ab", "D#": "Eb", "A#": "Bb", Db: "C#", Gb: "F#" };
 
 class ServerError extends Error {}
@@ -31,17 +31,17 @@ async function server(path, body) {
       body: JSON.stringify(body),
     });
   } catch {
-    throw new ServerError("Serveur BeatSense injoignable : est-il lancé sur ce PC ?");
+    throw new ServerError("BeatSense server unreachable: is it running on this computer?");
   }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ServerError(data.error || `Erreur ${res.status}`);
+    throw new ServerError(data.error || `Error ${res.status}`);
   }
   return res;
 }
 
 async function decodeMono(arrayBuffer) {
-  // decodeAudioData rééchantillonne à la fréquence du contexte : 44,1 kHz attendus par essentia
+  // decodeAudioData resamples to the context rate: essentia expects 44.1 kHz
   const audio = await new OfflineAudioContext(1, 1, SAMPLE_RATE).decodeAudioData(arrayBuffer);
   const mono = new Float32Array(audio.length);
   for (let c = 0; c < audio.numberOfChannels; c++) {
@@ -57,7 +57,7 @@ function describe({ bpm, key, scale, strength }) {
   return {
     bpm: rounded,
     bpm_exact: Math.round(bpm * 100) / 100,
-    // Ambiguïté classique demi/double tempo (trap à 140 détectée à 70, etc.)
+    // Classic half/double tempo ambiguity (140 BPM trap detected at 70, etc.)
     bpm_alt: rounded < 90 ? rounded * 2 : rounded > 160 ? Math.round(rounded / 2) : null,
     key,
     scale,
@@ -67,14 +67,14 @@ function describe({ bpm, key, scale, strength }) {
   };
 }
 
-// analyzeSamples : Float32Array mono 44,1 kHz -> { bpm, key, scale, strength } (essentia-runner.js)
+// analyzeSamples: mono 44.1 kHz Float32Array -> { bpm, key, scale, strength } (essentia-runner.js)
 async function fetchAndAnalyze(videoId, analyzeSamples) {
   const meta = await (await server("/fetch", { video_id: videoId })).json();
   const audio = await (await server(`/audio/${videoId}`)).arrayBuffer();
   return { ...meta, ...describe(await analyzeSamples(await decodeMono(audio))) };
 }
 
-// analyze : videoId -> résultat complet ; le cache et les actions sont identiques sur les deux navigateurs
+// analyze: videoId -> full result; the cache and the actions are identical on both browsers
 function createActions(analyze) {
   const inFlight = new Map();
 
@@ -98,7 +98,7 @@ function createActions(analyze) {
     analyze: analyzeOnce,
     async download(videoId, { notation }) {
       const a = await analyzeOnce(videoId);
-      // Même notation que le panneau ; "/" est interdit dans un nom de fichier
+      // Same notation as the panel; "/" is forbidden in a file name
       const label = keyLabel(a.key, a.scale, notation, "-");
       const res = await server("/download", { video_id: videoId, bpm: a.bpm, key_label: label });
       return { ...a, ...(await res.json()) };
@@ -108,14 +108,14 @@ function createActions(analyze) {
 }
 
 function errorMessage(e) {
-  return e instanceof ServerError ? e.message : `Analyse impossible : ${e?.message ?? e}`;
+  return e instanceof ServerError ? e.message : `Analysis failed: ${e?.message ?? e}`;
 }
 
-// sendResponse plutôt qu'une promesse renvoyée : seule forme acceptée par les deux navigateurs
+// sendResponse rather than a returned promise: the only form accepted by both browsers
 function listen(actions) {
   browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     const { action, videoId, target } = msg;
-    if (target || !actions[action]) return false; // message destiné au document offscreen (Chrome)
+    if (target || !actions[action]) return false; // message meant for the offscreen document (Chrome)
     actions[action](videoId, msg).then(
       (data) => sendResponse({ ok: true, data }),
       (e) => {

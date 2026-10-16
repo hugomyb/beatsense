@@ -1,10 +1,10 @@
-// Calcul du tempo et de la tonalité avec essentia.js.
-// Chargé dans la page de fond (Firefox) ou dans la page sandbox (Chrome : seule page où
-// Manifest V3 autorise le Function() dont essentia.js a besoin).
+// Tempo and key computation with essentia.js.
+// Loaded in the background page (Firefox) or in the sandbox page (Chrome: the only page where
+// Manifest V3 allows the Function() that essentia.js needs).
 //
-// Réglages choisis sur 58 type beats dont la description donne BPM et tonalité :
-// - tonalité sur tout le morceau, profil "edmm" : 76 % de tonalités exactes (64 % avec "bgate" sur 2 min)
-// - tempo sur 2 min au milieu, méthode "degara" : aussi juste que "multifeature", 6x plus rapide en WASM
+// Settings chosen on 58 type beats whose description gives BPM and key:
+// - key over the whole track, "edmm" profile: 76% exact keys (64% with "bgate" on 2 min)
+// - tempo over 2 min in the middle, "degara" method: as accurate as "multifeature", 6x faster in WASM
 const RUNNER_RATE = 44100;
 const TEMPO_SECONDS = 120;
 
@@ -21,7 +21,7 @@ function analyzeSamples(samples) {
     const k = essentiaInstance.KeyExtractor(full, true, 4096, 4096, 12, 3500, 60, 25, 0.2, "edmm", RUNNER_RATE);
     return { bpm, key: k.key, scale: k.scale, strength: k.strength };
   } finally {
-    // mémoire WASM, pas libérée par le ramasse-miettes
+    // WASM memory, not freed by the garbage collector
     middle.delete();
     full.delete();
   }

@@ -1,9 +1,9 @@
-# Installation de BeatSense sous Windows. Dans PowerShell :
+# BeatSense installation on Windows. In PowerShell:
 #   irm https://raw.githubusercontent.com/hugomyb/beatsense/main/install.ps1 | iex
 #
-# Installe ffmpeg et uv si besoin, le serveur dans %LOCALAPPDATA%\BeatSense, le lance au
-# démarrage de Windows (sans fenêtre), puis installe l'extension dans Firefox et/ou Chrome.
-# Relancer la commande répare / réinstalle. Le serveur se met ensuite à jour tout seul.
+# Installs ffmpeg and uv if needed, the server in %LOCALAPPDATA%\BeatSense, starts it at
+# Windows startup (without a window), then installs the extension in Firefox and/or Chrome.
+# Rerunning the command repairs / reinstalls. The server then updates itself.
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -18,32 +18,32 @@ function Refresh-Path {
 }
 
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-    Step "Installation de ffmpeg (conversion en mp3)"
+    Step "Installing ffmpeg (mp3 conversion)"
     winget install --id Gyan.FFmpeg -e --silent --accept-package-agreements --accept-source-agreements
     Refresh-Path
 }
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    Step "Installation de uv (gère Python pour BeatSense, sans toucher au reste du système)"
+    Step "Installing uv (manages Python for BeatSense, without touching the rest of the system)"
     powershell -NoProfile -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex"
     Refresh-Path
 }
 
-Step "Arrêt de l'ancienne version si elle tourne"
+Step "Stopping the previous version if it is running"
 Get-CimInstance Win32_Process -Filter "Name LIKE 'python%'" |
     Where-Object { $_.CommandLine -like "*beatsense.py*" } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
 
-Step "Téléchargement du serveur"
+Step "Downloading the server"
 New-Item -ItemType Directory -Force "$Dir\server" | Out-Null
 Invoke-WebRequest "$Raw/server/beatsense.py" -OutFile "$Dir\server\beatsense.py"
 Invoke-WebRequest "$Raw/server/requirements.txt" -OutFile "$Dir\server\requirements.txt"
 
-Step "Préparation de Python et yt-dlp"
+Step "Setting up Python and yt-dlp"
 uv venv --seed --allow-existing -q -p 3.12 "$Dir\.venv"
 uv pip install -q -p "$Dir\.venv" -U -r "$Dir\server\requirements.txt"
 
-Step "Lancement au démarrage de Windows"
+Step "Starting at Windows startup"
 $Pythonw = "$Dir\.venv\Scripts\pythonw.exe"
 $PyArgs = "-I `"$Dir\server\beatsense.py`""
 $Shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath("Startup")) "BeatSense.lnk"))
@@ -56,9 +56,9 @@ Start-Process $Pythonw -ArgumentList $PyArgs -WorkingDirectory $Dir
 Start-Sleep -Seconds 3
 try {
     $health = Invoke-RestMethod "http://127.0.0.1:7843/health"
-    Write-Host "Serveur BeatSense lancé, prods enregistrées dans $($health.dir)" -ForegroundColor Green
+    Write-Host "BeatSense server started, beats saved in $($health.dir)" -ForegroundColor Green
 } catch {
-    Write-Host "Le serveur ne répond pas. Lance-le à la main pour voir l'erreur :" -ForegroundColor Red
+    Write-Host "The server is not responding. Run it by hand to see the error:" -ForegroundColor Red
     Write-Host "  & `"$Dir\.venv\Scripts\python.exe`" -I `"$Dir\server\beatsense.py`""
     return
 }
@@ -74,17 +74,17 @@ function Find-Browser($exe) {
 
 $Firefox = Find-Browser "firefox.exe"
 if ($Firefox) {
-    Step "Installation de l'extension dans Firefox"
+    Step "Installing the extension in Firefox"
     $XpiFile = Join-Path $env:TEMP "beatsense.xpi"
     Invoke-WebRequest $Xpi -OutFile $XpiFile
     Start-Process $Firefox -ArgumentList "`"$XpiFile`""
-    Write-Host "Clique sur « Ajouter » dans Firefox. Les mises à jour se feront ensuite toutes seules." -ForegroundColor Green
+    Write-Host "Click "Add" in Firefox. Updates will then happen automatically." -ForegroundColor Green
 }
 
 $Chrome = Find-Browser "chrome.exe"
 if ($Chrome) {
-    Step "Préparation de l'extension Chrome"
-    # Le serveur tient ce dossier à jour ; Chrome recharge l'extension quand une version sort
+    Step "Preparing the Chrome extension"
+    # The server keeps this folder up to date; Chrome reloads the extension when a version is released
     $ChromeDir = "$Dir\chrome-extension"
     if (-not (Test-Path "$ChromeDir\manifest.json")) {
         $Zip = Join-Path $env:TEMP "beatsense-chrome.zip"
@@ -93,13 +93,13 @@ if ($Chrome) {
     }
     Set-Clipboard $ChromeDir
     Start-Process $Chrome -ArgumentList "chrome://extensions"
-    Write-Host "Dans Chrome (page des extensions qui vient de s'ouvrir) :" -ForegroundColor Green
-    Write-Host "  1. active le « Mode développeur » en haut à droite"
-    Write-Host "  2. « Charger l'extension non empaquetée » et colle ce dossier (déjà copié) :"
+    Write-Host "In Chrome (the extensions page that just opened):" -ForegroundColor Green
+    Write-Host "  1. turn on "Developer mode" at the top right"
+    Write-Host "  2. click "Load unpacked" and paste this folder (already copied):"
     Write-Host "     $ChromeDir"
-    Write-Host "  À faire une seule fois : les mises à jour se feront ensuite toutes seules."
+    Write-Host "  Only needed once: updates will then happen automatically."
 }
 
 if (-not $Firefox -and -not $Chrome) {
-    Write-Host "Ni Firefox ni Chrome trouvés : installe l'un des deux puis relance cette commande."
+    Write-Host "Neither Firefox nor Chrome found: install one of them, then rerun this command."
 }

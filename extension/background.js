@@ -1,2 +1,2 @@
-// Page de fond Firefox : l'analyse tourne directement ici (Manifest V2 autorise essentia.js).
+// Firefox background page: the analysis runs right here (Manifest V2 allows essentia.js).
 listen(createActions((videoId) => fetchAndAnalyze(videoId, analyzeSamples)));

@@ -1,6 +1,6 @@
-// Document offscreen Chrome : récupère et décode l'audio, puis fait calculer la page sandbox.
+// Chrome offscreen document: fetches and decodes the audio, then has the sandbox page compute.
 const frame = document.getElementById("sandbox");
-// La page sandbox signale qu'elle est prête (son origine opaque empêche de lire son état)
+// The sandbox page signals when it is ready (its opaque origin prevents reading its state)
 let markReady;
 const frameReady = new Promise((resolve) => (markReady = resolve));
 frame.addEventListener("load", () => markReady(), { once: true });
@@ -22,7 +22,7 @@ async function analyzeInSandbox(samples) {
   const id = nextId++;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
-    // La page sandbox a une origine opaque : "*" est la seule cible possible
+    // The sandbox page has an opaque origin: "*" is the only possible target
     frame.contentWindow.postMessage({ id, samples }, "*", [samples.buffer]);
   });
 }
