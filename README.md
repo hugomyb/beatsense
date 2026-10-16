@@ -1,19 +1,27 @@
-# BeatSense
+<p align="center">
+  <img src="extension/icons/icon-128.png" width="96" alt="BeatSense logo">
+</p>
 
-<img src="extension/icons/icon-128.png" width="64" align="right" alt="BeatSense logo">
-
-**BPM & key finder for YouTube beats, with one-click MP3 download.** A free, open-source Firefox and Chrome extension for beatmakers and producers: on any YouTube type beat or instrumental, BeatSense shows the tempo (BPM), the musical key (with Camelot notation) and downloads the beat as an MP3 straight into your prods folder, with BPM and key in the file name.
-
-[![Latest release](https://img.shields.io/github/v/release/hugomyb/beatsense)](https://github.com/hugomyb/beatsense/releases/latest)
-[![License: AGPL-3.0](https://img.shields.io/github/license/hugomyb/beatsense)](LICENSE)
-![Firefox](https://img.shields.io/badge/Firefox-supported-FF7139?logo=firefoxbrowser&logoColor=white)
-![Chrome](https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white)
+<h1 align="center">BeatSense</h1>
 
 <p align="center">
-  <img src="docs/youtube-panel.png" width="640" alt="BeatSense panel under a YouTube type beat showing 120 BPM, E minor (9A) and a download button">
-  &nbsp;
-  <img src="docs/popup.png" width="200" alt="BeatSense settings popup">
+  <b>BPM & key finder for YouTube beats, with one-click MP3 download.</b>
 </p>
+
+<p align="center">
+  <a href="https://github.com/hugomyb/beatsense/releases/latest"><img src="https://img.shields.io/github/v/release/hugomyb/beatsense" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/hugomyb/beatsense" alt="License: AGPL-3.0"></a>
+  <img src="https://img.shields.io/badge/Firefox-supported-FF7139?logo=firefoxbrowser&logoColor=white" alt="Firefox">
+  <img src="https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white" alt="Chrome">
+</p>
+
+<p align="center">
+  <img src="docs/youtube-panel.png" height="340" alt="BeatSense panel under a YouTube type beat showing 120 BPM, E minor (9A) and a download button">
+  &nbsp;&nbsp;
+  <img src="docs/popup.png" height="340" alt="BeatSense settings popup">
+</p>
+
+A free, open-source Firefox and Chrome extension for beatmakers and producers: on any YouTube type beat or instrumental, BeatSense shows the tempo (BPM), the musical key (with Camelot notation) and downloads the beat as an MP3 straight into your beats folder, with BPM and key in the file name.
 
 ## Features
 
