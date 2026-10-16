@@ -4,7 +4,7 @@
 
 Extension Firefox pour beatmakers : sur une prod YouTube, affiche le BPM, la tonalité (avec la notation Camelot) et télécharge l'instru en mp3 dans ton dossier de prods, avec BPM et tonalité dans le nom du fichier.
 
-- `extension/` : panneau sous le titre de la vidéo. L'analyse (essentia.js) se lance toute seule si le titre ressemble à une prod (type beat, instrumental, prod...), sinon bouton « Analyser ».
+- `extension/` : panneau sous le titre des vidéos musicales (catégorie YouTube Musique, ou titre de prod : type beat, instrumental...). L'analyse (essentia.js) se lance toute seule sur les prods. Le bouton BeatSense de la barre d'outils permet de la désactiver, d'afficher le panneau partout ou de régler l'analyse automatique.
 - `server/` : petit serveur local (127.0.0.1:7843) qui récupère l'audio avec yt-dlp, ce qu'une extension ne peut pas faire seule.
 
 L'extension est signée par Mozilla mais pas publiée sur le store : elle s'installe depuis les releases de ce dépôt.
