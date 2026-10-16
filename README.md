@@ -9,6 +9,12 @@
 ![Firefox](https://img.shields.io/badge/Firefox-supported-FF7139?logo=firefoxbrowser&logoColor=white)
 ![Chrome](https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white)
 
+<p align="center">
+  <img src="docs/youtube-panel.png" width="640" alt="BeatSense panel under a YouTube type beat showing 120 BPM, E minor (9A) and a download button">
+  &nbsp;
+  <img src="docs/popup.png" width="200" alt="BeatSense settings popup">
+</p>
+
 ## Features
 
 - **BPM detection**: tempo shown right under the video title, with half / double time alternatives.
