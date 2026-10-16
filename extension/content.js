@@ -1,7 +1,10 @@
 // Panneau BeatSense injecté sous la vidéo. YouTube est une SPA : on se recale à chaque navigation.
 const PROD_TITLE = /type\s*beat|instru(mental)?|\bprod\b|\bbeat\b|\bfree\b.*\b(beat|prod)\b/i;
 
+let settings = DEFAULT_SETTINGS;
 let currentId = null;
+let dismissedId = null; // vidéo sur laquelle le panneau a été fermé avec la croix
+const categories = new Map();
 
 const videoIdFromUrl = () => {
   const url = new URL(location.href);
@@ -17,6 +20,24 @@ function el(tag, cls, text) {
   if (cls) n.className = cls;
   if (text != null) n.textContent = text;
   return n;
+}
+
+// Catégorie YouTube de la vidéo ("Music", "Gaming"...), toujours en anglais quelle que soit la langue.
+function videoCategory(id) {
+  if (location.hostname === "music.youtube.com") return Promise.resolve("Music");
+  // Le lecteur la connaît déjà, sauf s'il n'a pas encore chargé la nouvelle vidéo
+  const player = document.getElementById("movie_player")?.wrappedJSObject?.getPlayerResponse?.();
+  if (player?.videoDetails?.videoId === id && player.microformat?.playerMicroformatRenderer?.category) {
+    return Promise.resolve(player.microformat.playerMicroformatRenderer.category);
+  }
+  if (!categories.has(id)) {
+    const category = fetch(`/watch?v=${id}`)
+      .then((r) => r.text())
+      .then((html) => html.match(/"category":"([^"]+)"/)?.[1] ?? null)
+      .catch(() => null);
+    categories.set(id, category);
+  }
+  return categories.get(id);
 }
 
 function buildPanel() {
@@ -37,12 +58,19 @@ function buildPanel() {
   folderBtn.title = "Ouvrir le dossier des prods";
   actions.append(analyzeBtn, dlBtn, folderBtn);
 
+  const close = el("button", "pg-close", "×");
+  close.title = "Masquer sur cette vidéo";
+
   const status = el("div", "pg-status");
-  panel.append(stats, actions, status);
+  panel.append(stats, actions, close, status);
 
   analyzeBtn.addEventListener("click", () => run("analyze"));
   dlBtn.addEventListener("click", () => run("download"));
   folderBtn.addEventListener("click", () => send("open-folder", currentId ?? "x"));
+  close.addEventListener("click", () => {
+    dismissedId = currentId;
+    panel.remove();
+  });
   return panel;
 }
 
@@ -94,34 +122,58 @@ async function run(action) {
   setBusy(true);
   setStatus(action === "download" ? "Téléchargement…" : "Analyse en cours…", "busy");
   const res = await send(action, videoId);
-  if (videoId !== currentId) return; // l'utilisateur a changé de vidéo entre-temps
+  if (videoId !== currentId || !document.getElementById("beatsense-panel")) return; // vidéo changée ou panneau fermé
   setBusy(false);
   if (!res.ok) return setStatus(res.error, "error");
   showResult(res.data);
-  setStatus(action === "download" ? `Enregistré : ${res.data.file.split("/").pop()}` : "", action === "download" ? "ok" : "");
+  setStatus(action === "download" ? `Enregistré : ${res.data.file.split(/[\\/]/).pop()}` : "", action === "download" ? "ok" : "");
 }
 
 function videoTitle() {
   return document.querySelector("ytd-watch-metadata #title h1")?.textContent || document.title;
 }
 
-function onNavigate() {
+async function refresh() {
   const id = videoIdFromUrl();
-  const panel = document.getElementById("beatsense-panel");
-  if (!id) {
-    panel?.remove();
+  if (!id || !settings.enabled || id === dismissedId) {
+    document.getElementById("beatsense-panel")?.remove();
     currentId = null;
     return;
   }
-  if (id === currentId) return getPanel();
+  if (id === currentId) {
+    // YouTube re-rend parfois le titre : on raccroche le panneau s'il est affiché
+    if (document.getElementById("beatsense-panel")) getPanel();
+    return;
+  }
+
   currentId = id;
+  document.getElementById("beatsense-panel")?.remove();
+  // Le titre et le lecteur mettent un instant à se mettre à jour après une navigation SPA
+  await new Promise((r) => setTimeout(r, 1200));
+  if (id !== currentId) return;
+
+  const isProd = PROD_TITLE.test(videoTitle());
+  const isMusic = isProd || (await videoCategory(id)) === "Music";
+  if (id !== currentId) return;
+  if (settings.show === "music" && !isMusic) {
+    currentId = null; // pour réévaluer si les réglages changent
+    return;
+  }
+
   reset();
-  // Le titre met un instant à se mettre à jour après une navigation SPA
-  setTimeout(() => {
-    getPanel();
-    if (id === currentId && PROD_TITLE.test(videoTitle())) run("analyze");
-  }, 1200);
+  if ((settings.auto === "prods" && isProd) || (settings.auto === "music" && isMusic)) run("analyze");
 }
 
-document.addEventListener("yt-navigate-finish", onNavigate);
-onNavigate();
+browser.storage.onChanged.addListener((changes) => {
+  if (!changes.settings) return;
+  settings = { ...DEFAULT_SETTINGS, ...changes.settings.newValue };
+  currentId = null;
+  dismissedId = null;
+  refresh();
+});
+
+document.addEventListener("yt-navigate-finish", refresh);
+loadSettings().then((s) => {
+  settings = s;
+  refresh();
+});

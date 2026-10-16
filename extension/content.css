@@ -54,3 +54,20 @@ html[dark] .pg-btn:hover:not(:disabled) { filter: brightness(1.2); }
 .pg-status:empty { display: none; }
 .pg-status[data-kind="error"] { color: var(--pg-accent); }
 .pg-status[data-kind="ok"] { color: #2ba640; }
+.pg-panel { position: relative; }
+.pg-panel.pg-floating { position: fixed; }
+.pg-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  border: 0;
+  background: none;
+  color: var(--pg-muted);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.pg-close:hover { color: var(--pg-fg); background: var(--pg-btn); }
+.pg-actions { margin-right: 24px; }

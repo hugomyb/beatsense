@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon-48.png" alt="" width="24" height="24">
+    <h1>BeatSense</h1>
+    <label class="switch" title="Activer / désactiver sur YouTube">
+      <input type="checkbox" id="enabled">
+      <span></span>
+    </label>
+  </header>
+
+  <fieldset id="options">
+    <legend>Afficher le panneau</legend>
+    <label><input type="radio" name="show" value="music"> Sur la musique uniquement</label>
+    <label><input type="radio" name="show" value="always"> Sur toutes les vidéos</label>
+  </fieldset>
+
+  <fieldset id="options-auto">
+    <legend>Analyser automatiquement</legend>
+    <label><input type="radio" name="auto" value="prods"> Les prods (type beat, instru…)</label>
+    <label><input type="radio" name="auto" value="music"> Toute la musique</label>
+    <label><input type="radio" name="auto" value="off"> Jamais, je clique sur Analyser</label>
+  </fieldset>
+
+  <footer id="server">Serveur : vérification…</footer>
+
+  <script src="../settings.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
