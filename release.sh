@@ -3,6 +3,8 @@
 # Firefox sur tous les PC (il vérifie updates.json environ une fois par jour).
 #   ./release.sh 1.2.0
 #
+# L'extension Chrome (dist/beatsense-chrome.zip) est mise à jour par le serveur local de chaque PC.
+#
 # Signature Mozilla (canal "unlisted" : hors du store). Clés API dans ~/.config/beatsense/amo.env :
 #   WEB_EXT_API_KEY=user:12345:67
 #   WEB_EXT_API_SECRET=...
@@ -17,11 +19,14 @@ ENV_FILE=~/.config/beatsense/amo.env
 git diff --quiet HEAD || { echo "Des modifications ne sont pas commitées : commit d'abord."; exit 1; }
 set -a; source "$ENV_FILE"; set +a
 
-sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" extension/manifest.json
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" extension/manifest.*.json
+./build.sh
 
 rm -rf dist
-npx -y web-ext@8 sign --channel unlisted --source-dir extension --artifacts-dir dist
+npx -y web-ext@8 sign --channel unlisted --source-dir build/firefox --artifacts-dir dist
 mv dist/*.xpi dist/beatsense.xpi
+# Chrome : pas de signature possible hors store, le serveur local installe ce zip
+(cd build/chrome && zip -qr ../../dist/beatsense-chrome.zip .)
 
 cat > updates.json <<JSON
 {
@@ -38,12 +43,12 @@ cat > updates.json <<JSON
 }
 JSON
 
-git add updates.json extension/manifest.json
+git add updates.json extension/manifest.*.json
 git commit -q -m "Extension $VERSION"
 git tag "v$VERSION"
 # La release avant la branche : updates.json ne doit jamais pointer vers un fichier absent
 git push -q origin "v$VERSION"
-gh release create "v$VERSION" dist/beatsense.xpi -R "$REPO" -t "BeatSense $VERSION" \
+gh release create "v$VERSION" dist/beatsense.xpi dist/beatsense-chrome.zip -R "$REPO" -t "BeatSense $VERSION" \
   -n "Installée automatiquement par Firefox sur les PC qui ont déjà BeatSense."
 git push -q
 echo "Version $VERSION publiée"

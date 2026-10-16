@@ -2,13 +2,14 @@
 #   irm https://raw.githubusercontent.com/hugomyb/beatsense/main/install.ps1 | iex
 #
 # Installe ffmpeg et uv si besoin, le serveur dans %LOCALAPPDATA%\BeatSense, le lance au
-# démarrage de Windows (sans fenêtre), puis ouvre l'extension dans Firefox.
+# démarrage de Windows (sans fenêtre), puis installe l'extension dans Firefox et/ou Chrome.
 # Relancer la commande répare / réinstalle. Le serveur se met ensuite à jour tout seul.
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 $Raw = "https://raw.githubusercontent.com/hugomyb/beatsense/main"
 $Xpi = "https://github.com/hugomyb/beatsense/releases/latest/download/beatsense.xpi"
+$ChromeZip = "https://github.com/hugomyb/beatsense/releases/latest/download/beatsense-chrome.zip"
 $Dir = Join-Path $env:LOCALAPPDATA "BeatSense"
 
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
@@ -62,12 +63,43 @@ try {
     return
 }
 
-Step "Installation de l'extension dans Firefox"
-$XpiFile = Join-Path $env:TEMP "beatsense.xpi"
-Invoke-WebRequest $Xpi -OutFile $XpiFile
-try {
-    Start-Process firefox -ArgumentList "`"$XpiFile`""
+function Find-Browser($exe) {
+    $key = "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$exe"
+    foreach ($root in "HKCU:", "HKLM:") {
+        $path = (Get-ItemProperty "$root\$key" -ErrorAction SilentlyContinue).'(default)'
+        if ($path) { $path = $path.Trim('"') }
+        if ($path -and (Test-Path $path)) { return $path }
+    }
+}
+
+$Firefox = Find-Browser "firefox.exe"
+if ($Firefox) {
+    Step "Installation de l'extension dans Firefox"
+    $XpiFile = Join-Path $env:TEMP "beatsense.xpi"
+    Invoke-WebRequest $Xpi -OutFile $XpiFile
+    Start-Process $Firefox -ArgumentList "`"$XpiFile`""
     Write-Host "Clique sur « Ajouter » dans Firefox. Les mises à jour se feront ensuite toutes seules." -ForegroundColor Green
-} catch {
-    Write-Host "Firefox introuvable : ouvre $XpiFile avec Firefox pour installer l'extension."
+}
+
+$Chrome = Find-Browser "chrome.exe"
+if ($Chrome) {
+    Step "Préparation de l'extension Chrome"
+    # Le serveur tient ce dossier à jour ; Chrome recharge l'extension quand une version sort
+    $ChromeDir = "$Dir\chrome-extension"
+    if (-not (Test-Path "$ChromeDir\manifest.json")) {
+        $Zip = Join-Path $env:TEMP "beatsense-chrome.zip"
+        Invoke-WebRequest $ChromeZip -OutFile $Zip
+        Expand-Archive $Zip -DestinationPath $ChromeDir -Force
+    }
+    Set-Clipboard $ChromeDir
+    Start-Process $Chrome -ArgumentList "chrome://extensions"
+    Write-Host "Dans Chrome (page des extensions qui vient de s'ouvrir) :" -ForegroundColor Green
+    Write-Host "  1. active le « Mode développeur » en haut à droite"
+    Write-Host "  2. « Charger l'extension non empaquetée » et colle ce dossier (déjà copié) :"
+    Write-Host "     $ChromeDir"
+    Write-Host "  À faire une seule fois : les mises à jour se feront ensuite toutes seules."
+}
+
+if (-not $Firefox -and -not $Chrome) {
+    Write-Host "Ni Firefox ni Chrome trouvés : installe l'un des deux puis relance cette commande."
 }

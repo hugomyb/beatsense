@@ -30,6 +30,8 @@
       "lib/exports-shim.js",
       "lib/essentia-wasm.umd.js",
       "lib/essentia.js-core.umd.js",
+      "core.js",
+      "essentia-runner.js",
       "background.js"
     ],
     "persistent": false

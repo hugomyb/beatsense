@@ -1,4 +1,5 @@
 // Réglages partagés entre le panneau (content.js) et le menu de la barre d'outils (popup).
+globalThis.browser ??= chrome;
 const DEFAULT_SETTINGS = {
   enabled: true,
   show: "music", // "music" : vidéos musicales et prods seulement, "always" : toutes les vidéos

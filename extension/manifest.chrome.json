@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "BeatSense",
+  "version": "1.2.0",
+  "description": "BPM, tonalité et téléchargement des prods directement sur YouTube.",
+  "icons": { "48": "icons/icon-48.png", "96": "icons/icon-96.png", "128": "icons/icon-128.png" },
+  "permissions": ["storage", "offscreen", "alarms"],
+  "host_permissions": ["http://127.0.0.1:7843/*"],
+  "background": { "service_worker": "chrome/sw.js" },
+  "action": {
+    "default_icon": { "48": "icons/icon-48.png", "96": "icons/icon-96.png" },
+    "default_title": "BeatSense",
+    "default_popup": "popup/popup.html"
+  },
+  "sandbox": { "pages": ["chrome/sandbox.html"] },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://music.youtube.com/*"],
+      "js": ["settings.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
