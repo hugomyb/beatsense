@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BeatSense",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "BPM, key and download for beats, right on YouTube.",
   "icons": { "48": "icons/icon-48.png", "96": "icons/icon-96.png", "128": "icons/icon-128.png" },
   "permissions": ["storage", "offscreen", "alarms"],
