@@ -16,9 +16,9 @@
 </p>
 
 <p align="center">
-  <img src="docs/youtube-panel.png" height="340" alt="BeatSense panel under a YouTube type beat showing 120 BPM, E minor (9A) and a download button">
+  <img src="docs/screenshot-youtube.png" height="340" alt="BeatSense panel under a YouTube type beat showing 120 BPM, E minor (9A) and a download button">
   &nbsp;&nbsp;
-  <img src="docs/popup.png" height="340" alt="BeatSense settings popup">
+  <img src="docs/screenshot-popup.png" height="340" alt="BeatSense settings popup">
 </p>
 
 A free, open-source Firefox and Chrome extension for beatmakers and producers: on any YouTube type beat or instrumental, BeatSense shows the tempo (BPM), the musical key (with Camelot notation) and downloads the beat as an MP3 straight into your beats folder, with BPM and key in the file name.
