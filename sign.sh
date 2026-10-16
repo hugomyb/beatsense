@@ -21,4 +21,7 @@ if [ $# -ge 1 ]; then
 fi
 
 npx -y web-ext@8 sign --channel unlisted --source-dir extension --artifacts-dir dist
-ls -1t dist/*.xpi | head -1
+# Nom lisible pour le .xpi produit (web-ext le nomme d'après un hash)
+VERSION=$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' extension/manifest.json)
+mv "$(ls -1t dist/*.xpi | head -1)" "dist/beatsense-$VERSION.xpi"
+echo "dist/beatsense-$VERSION.xpi"
