@@ -1,30 +1,42 @@
 # BeatSense
 
-Extension Firefox : BPM, tonalité (+ Camelot) et téléchargement mp3 d'une prod directement depuis YouTube.
+<img src="extension/icons/icon-128.png" width="64" align="right" alt="">
 
-- `server/` : serveur local (127.0.0.1:7843) — yt-dlp pour l'audio, essentia pour BPM/tonalité. Service systemd utilisateur `beatsense`.
-- `extension/` : panneau injecté sous le titre de la vidéo. Analyse automatique si le titre ressemble à une prod (type beat, instrumental, prod...), sinon bouton « Analyser ».
+Extension Firefox pour beatmakers : sur une prod YouTube, affiche le BPM, la tonalité (avec la notation Camelot) et télécharge l'instru en mp3 dans ton dossier de prods, avec BPM et tonalité dans le nom du fichier.
+
+- `extension/` : panneau sous le titre de la vidéo. L'analyse (essentia.js) se lance toute seule si le titre ressemble à une prod (type beat, instrumental, prod...), sinon bouton « Analyser ».
+- `server/` : petit serveur local (127.0.0.1:7843) qui récupère l'audio avec yt-dlp, ce qu'une extension ne peut pas faire seule.
+
+L'extension est signée par Mozilla mais pas publiée sur le store : elle s'installe depuis les releases de ce dépôt.
 
 ## Installation
 
-    ./install.sh
+**Windows** — dans PowerShell :
 
-Extension, installation permanente :
+    irm https://raw.githubusercontent.com/hugomyb/beatsense/main/install.ps1 | iex
 
-1. `./sign.sh` (première fois) ou `./sign.sh 1.0.1` (après une modif de l'extension) : le .xpi signé arrive dans `dist/`.
-2. Firefox : `about:addons` > roue dentée > « Installer un module depuis un fichier » > le .xpi.
+**Linux** — ffmpeg et [uv](https://docs.astral.sh/uv/) requis :
 
-Sur un autre PC : cloner le dépôt, `./install.sh`, puis installer le même .xpi.
+    git clone https://github.com/hugomyb/beatsense && cd beatsense && ./install.sh
 
-Pour tester sans signer : `about:debugging#/runtime/this-firefox` > « Charger un module temporaire » > `extension/manifest.json`.
+Les deux scripts lancent le serveur au démarrage de la session et ouvrent l'extension dans Firefox : cliquer sur « Ajouter ».
 
-## Réglages (variables d'environnement du service)
+Les prods arrivent dans `Musique/Prods` (variable d'environnement `BEATSENSE_DIR` pour changer).
 
-- `BEATSENSE_DIR` : dossier des prods (défaut `~/Musique/Prods`)
-- `BEATSENSE_PORT` : port (défaut 7843, à changer aussi dans `background.js` et `manifest.json`)
+## Mises à jour
 
-## Quand YouTube casse les téléchargements
+Tout est automatique :
 
-    ./update.sh
+- l'extension : Firefox vérifie `updates.json` environ une fois par jour ;
+- le serveur : il met yt-dlp à jour chaque jour (YouTube le casse régulièrement) et, sous Windows, se remplace par la dernière version de `server/beatsense.py`.
 
-Logs : `journalctl --user -u beatsense -f`
+Publier une nouvelle version de l'extension : `./release.sh 1.2.0` (signature Mozilla, release GitHub et `updates.json`).
+
+## Dépannage
+
+- « Serveur BeatSense injoignable » : relancer le PC, ou la commande d'installation.
+- Logs sous Linux : `journalctl --user -u beatsense -f`
+
+## Licence
+
+AGPL-3.0, comme [essentia.js](https://github.com/MTG/essentia.js) qui est embarqué dans l'extension.

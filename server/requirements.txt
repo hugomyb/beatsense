@@ -1,3 +1,2 @@
-essentia
 yt-dlp[default]
 deno
