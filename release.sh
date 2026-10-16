@@ -38,7 +38,8 @@ cat > updates.json <<JSON
 }
 JSON
 
-git commit -q -am "Extension $VERSION"
+git add updates.json extension/manifest.json
+git commit -q -m "Extension $VERSION"
 git tag "v$VERSION"
 # La release avant la branche : updates.json ne doit jamais pointer vers un fichier absent
 git push -q origin "v$VERSION"
