@@ -1,51 +1,66 @@
 # BeatSense
 
-<img src="extension/icons/icon-128.png" width="64" align="right" alt="">
+<img src="extension/icons/icon-128.png" width="64" align="right" alt="BeatSense logo">
 
-Extension Firefox et Chrome pour beatmakers : sur une prod YouTube, affiche le BPM, la tonalité (avec la notation Camelot) et télécharge l'instru en mp3 dans ton dossier de prods, avec BPM et tonalité dans le nom du fichier.
+**BPM & key finder for YouTube beats, with one-click MP3 download.** A free, open-source Firefox and Chrome extension for beatmakers and producers: on any YouTube type beat or instrumental, BeatSense shows the tempo (BPM), the musical key (with Camelot notation) and downloads the beat as an MP3 straight into your prods folder, with BPM and key in the file name.
 
-- `extension/` : panneau sous le titre des vidéos musicales (catégorie YouTube Musique, ou titre de prod : type beat, instrumental...). L'analyse (essentia.js) se lance toute seule sur les prods. Le bouton BeatSense de la barre d'outils permet de la désactiver, d'afficher le panneau partout ou de régler l'analyse automatique.
-- `extension/chrome/` : spécifique à Chrome (Manifest V3) : essentia.js tourne dans une page sandbox, via un document offscreen. `./build.sh` assemble `build/firefox` et `build/chrome`.
-- `server/` : petit serveur local (127.0.0.1:7843) qui récupère l'audio avec yt-dlp, ce qu'une extension ne peut pas faire seule.
+[![Latest release](https://img.shields.io/github/v/release/hugomyb/beatsense)](https://github.com/hugomyb/beatsense/releases/latest)
+[![License: AGPL-3.0](https://img.shields.io/github/license/hugomyb/beatsense)](LICENSE)
+![Firefox](https://img.shields.io/badge/Firefox-supported-FF7139?logo=firefoxbrowser&logoColor=white)
+![Chrome](https://img.shields.io/badge/Chrome-supported-4285F4?logo=googlechrome&logoColor=white)
 
-L'extension n'est publiée sur aucun store : elle s'installe depuis les releases de ce dépôt (signée par Mozilla pour Firefox, chargée « non empaquetée » dans Chrome).
+## Features
+
+- **BPM detection**: tempo shown right under the video title, with half / double time alternatives.
+- **Key detection**: musical key in standard notation (flats, sharps or both) and Camelot wheel notation for harmonic mixing.
+- **MP3 download**: saves the instrumental to `Music/Prods` as `Title [140 BPM A minor].mp3`, so BPM and key show up right in your DAW's file browser (FL Studio, Ableton…).
+- **Automatic**: analysis runs by itself on music videos (YouTube Music category, or titles like *type beat*, *instrumental*, *prod.*…). The toolbar button lets you turn it off, show the panel on every video, or tune auto-analysis.
+- **Runs locally**: audio analysis happens in your browser with [essentia.js](https://github.com/MTG/essentia.js). No account, no tracking, no cloud.
 
 ## Installation
 
-**Windows** — dans PowerShell :
+BeatSense is not on the extension stores: it installs from this repository's releases (signed by Mozilla for Firefox, loaded "unpacked" in Chrome).
+
+**Windows**, in PowerShell:
 
     irm https://raw.githubusercontent.com/hugomyb/beatsense/main/install.ps1 | iex
 
-**Linux** — ffmpeg et [uv](https://docs.astral.sh/uv/) requis :
+**Linux**, requires ffmpeg and [uv](https://docs.astral.sh/uv/):
 
     git clone https://github.com/hugomyb/beatsense && cd beatsense && ./install.sh
 
-Les deux scripts lancent le serveur au démarrage de la session, puis :
+Both scripts start the local server at login, then:
 
-- Firefox : cliquer sur « Ajouter » ;
-- Chrome : sur la page des extensions qui s'ouvre, activer le « Mode développeur », puis « Charger l'extension non empaquetée » et choisir le dossier indiqué par le script (`%LOCALAPPDATA%\BeatSense\chrome-extension` sous Windows, `~/.local/share/beatsense/chrome-extension` sous Linux).
+- **Firefox**: click "Add".
+- **Chrome**: on the extensions page that opens, enable "Developer mode", click "Load unpacked" and pick the folder printed by the script (`%LOCALAPPDATA%\BeatSense\chrome-extension` on Windows, `~/.local/share/beatsense/chrome-extension` on Linux).
 
-Les prods arrivent dans `Musique/Prods` (variable d'environnement `BEATSENSE_DIR` pour changer).
+Beats are saved to `Music/Prods` (set the `BEATSENSE_DIR` environment variable to change it).
 
-## Mises à jour
+## How it works
 
-Tout est automatique :
+- `extension/`: the panel under music video titles, and the essentia.js analysis.
+- `extension/chrome/`: Chrome specifics (Manifest V3): essentia.js runs in a sandboxed page through an offscreen document. `./build.sh` builds `build/firefox` and `build/chrome`.
+- `server/`: a tiny local server (127.0.0.1:7843) that fetches the audio with yt-dlp, which a browser extension can't do on its own.
 
-- l'extension Firefox : Firefox vérifie `updates.json` une fois par 24 h (ou `about:addons` > « Rechercher des mises à jour ») ;
-- l'extension Chrome : le serveur remplace les fichiers du dossier par ceux de la dernière release, et l'extension se recharge (vérification toutes les heures) ;
-- le serveur : il met yt-dlp à jour chaque jour (YouTube le casse régulièrement) et, sous Windows, se remplace par la dernière version de `server/beatsense.py`.
+## Updates
 
-Publier une nouvelle version : `./release.sh 1.4.0` (build des deux versions, signature Mozilla, release GitHub et `updates.json`).
+Everything updates automatically:
 
-## Précision de l'analyse
+- Firefox extension: Firefox checks `updates.json` every 24 h (or `about:addons` > "Check for Updates").
+- Chrome extension: the server replaces the folder's files with the latest release and the extension reloads itself (checked hourly).
+- Server: updates yt-dlp daily (YouTube breaks it regularly) and, on Windows, replaces itself with the latest `server/beatsense.py`.
 
-Réglages choisis sur 58 type beats dont la description annonce BPM et tonalité : tonalité exacte dans 76 % des cas (profil `edmm` sur le morceau entier), tempo exact à ±1 BPM dans 84 % des cas et 97 % en comptant le double / la moitié (affichés en petit à côté).
+Publishing a new version: `./release.sh 1.4.0` (builds both versions, Mozilla signing, GitHub release and `updates.json`).
 
-## Dépannage
+## Accuracy
 
-- « Serveur BeatSense injoignable » : relancer le PC, ou la commande d'installation.
-- Logs sous Linux : `journalctl --user -u beatsense -f`
+Tuned on 58 type beats whose descriptions state BPM and key: exact key in 76% of cases (`edmm` profile on the whole track), tempo within ±1 BPM in 84% of cases, and 97% counting half / double time (shown in small next to the main value).
 
-## Licence
+## Troubleshooting
 
-AGPL-3.0, comme [essentia.js](https://github.com/MTG/essentia.js) qui est embarqué dans l'extension.
+- "BeatSense server unreachable": restart your computer, or re-run the install command.
+- Logs on Linux: `journalctl --user -u beatsense -f`
+
+## License
+
+AGPL-3.0, like [essentia.js](https://github.com/MTG/essentia.js), which is bundled in the extension.
