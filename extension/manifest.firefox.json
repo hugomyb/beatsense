@@ -30,6 +30,7 @@
       "lib/exports-shim.js",
       "lib/essentia-wasm.umd.js",
       "lib/essentia.js-core.umd.js",
+      "settings.js",
       "core.js",
       "essentia-runner.js",
       "background.js"

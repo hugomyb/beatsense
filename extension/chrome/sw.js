@@ -1,6 +1,6 @@
 // Service worker Chrome. Il n'a ni décodage audio ni droit à essentia.js : l'analyse passe par
 // un document offscreen (décodage) qui la confie à une page sandbox (essentia.js).
-importScripts("/core.js");
+importScripts("/settings.js", "/core.js");
 
 async function ensureOffscreen() {
   if (await chrome.offscreen.hasDocument()) return;

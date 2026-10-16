@@ -13,7 +13,7 @@ const videoIdFromUrl = () => {
   return m ? m[1] : null;
 };
 
-const send = (action, videoId) => browser.runtime.sendMessage({ action, videoId });
+const send = (action, videoId, extra = {}) => browser.runtime.sendMessage({ action, videoId, ...extra });
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -103,7 +103,7 @@ function showResult(d) {
   const p = getPanel();
   p.querySelector(".pg-bpm").textContent = d.bpm;
   p.querySelector(".pg-bpm-alt").textContent = d.bpm_alt ? `ou ${d.bpm_alt}` : "";
-  p.querySelector(".pg-key").textContent = d.key_label;
+  p.querySelector(".pg-key").textContent = keyLabel(d.key, d.scale, settings.notation);
   p.querySelector(".pg-camelot").textContent = d.camelot;
   p.querySelector(".pg-stats").title = `BPM exact : ${d.bpm_exact} — confiance tonalité : ${Math.round(d.confidence * 100)} %`;
 }
@@ -121,7 +121,8 @@ async function run(action) {
   if (!videoId) return;
   setBusy(true);
   setStatus(action === "download" ? "Téléchargement…" : "Analyse en cours…", "busy");
-  const res = await send(action, videoId);
+  // Le nom du fichier suit la notation choisie ("/" interdit dans un nom de fichier)
+  const res = await send(action, videoId, { notation: settings.notation });
   if (videoId !== currentId || !document.getElementById("beatsense-panel")) return; // vidéo changée ou panneau fermé
   setBusy(false);
   if (!res.ok) return setStatus(res.error, "error");

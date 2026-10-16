@@ -5,7 +5,7 @@ const form = {
 
 function render(s) {
   form.enabled.checked = s.enabled;
-  for (const name of ["show", "auto"]) {
+  for (const name of ["show", "auto", "notation"]) {
     document.querySelector(`input[name="${name}"][value="${s[name]}"]`).checked = true;
   }
   form.fieldsets.forEach((f) => (f.disabled = !s.enabled));
@@ -16,6 +16,7 @@ async function save() {
     enabled: form.enabled.checked,
     show: document.querySelector('input[name="show"]:checked').value,
     auto: document.querySelector('input[name="auto"]:checked').value,
+    notation: document.querySelector('input[name="notation"]:checked').value,
   };
   await browser.storage.local.set({ settings });
   render(settings);

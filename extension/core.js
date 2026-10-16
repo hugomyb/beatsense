@@ -1,4 +1,5 @@
 // Code commun Firefox / Chrome : serveur local, décodage audio, cache et actions du panneau.
+// Utilise keyLabel() de settings.js, chargé avant.
 // Firefox le charge dans sa page de fond, Chrome dans son service worker et son document offscreen.
 globalThis.browser ??= chrome;
 
@@ -95,9 +96,11 @@ function createActions(analyze) {
 
   return {
     analyze: analyzeOnce,
-    async download(videoId) {
+    async download(videoId, { notation }) {
       const a = await analyzeOnce(videoId);
-      const res = await server("/download", { video_id: videoId, bpm: a.bpm, key_label: a.key_label });
+      // Même notation que le panneau ; "/" est interdit dans un nom de fichier
+      const label = keyLabel(a.key, a.scale, notation, "-");
+      const res = await server("/download", { video_id: videoId, bpm: a.bpm, key_label: label });
       return { ...a, ...(await res.json()) };
     },
     "open-folder": () => server("/open-folder", {}).then(() => ({})),
@@ -110,9 +113,10 @@ function errorMessage(e) {
 
 // sendResponse plutôt qu'une promesse renvoyée : seule forme acceptée par les deux navigateurs
 function listen(actions) {
-  browser.runtime.onMessage.addListener(({ action, videoId, target }, _sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    const { action, videoId, target } = msg;
     if (target || !actions[action]) return false; // message destiné au document offscreen (Chrome)
-    actions[action](videoId).then(
+    actions[action](videoId, msg).then(
       (data) => sendResponse({ ok: true, data }),
       (e) => {
         console.error("[BeatSense]", e);
