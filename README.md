@@ -56,6 +56,15 @@ Beats are saved to `Music/Prods` (set the `BEATSENSE_DIR` environment variable t
 - `extension/chrome/`: Chrome specifics (Manifest V3): essentia.js runs in a sandboxed page through an offscreen document. `./build.sh` builds `build/firefox` and `build/chrome`.
 - `server/`: a tiny local server (127.0.0.1:7843) that fetches the audio with yt-dlp, which a browser extension can't do on its own.
 
+## Using the server from a web page
+
+By default the server only answers the extension. A self-hosted page (for instance a personal beat library) can be allowed with the `BEATSENSE_ALLOWED_ORIGINS` environment variable, a comma-separated list of origins:
+
+- Linux: a systemd drop-in, `~/.config/systemd/user/beatsense.service.d/origins.conf` with `[Service]` and `Environment=BEATSENSE_ALLOWED_ORIGINS=https://beats.example.com`, then `systemctl --user daemon-reload && systemctl --user restart beatsense`
+- Windows: `setx BEATSENSE_ALLOWED_ORIGINS "https://beats.example.com"`, then restart the computer
+
+Allowed pages can use `/download`, `/fetch` and `/audio/<id>` like the extension, plus `/search` (`{"query", "limit", "recent"}`) and `/details` (`{"ids": [...]}`), which read YouTube metadata without downloading anything.
+
 ## Updates
 
 Everything updates automatically:

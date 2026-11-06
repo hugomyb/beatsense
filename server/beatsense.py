@@ -122,6 +122,63 @@ def fetch_audio(video_id: str) -> dict:
         return meta
 
 
+def _flat(e: dict, complete: bool = False) -> dict | None:
+    vid = e.get("id")
+    if not vid or not VIDEO_ID.match(str(vid)) or e.get("live_status") in ("is_live", "is_upcoming"):
+        return None
+    item = {
+        "id": vid,
+        "title": e.get("title") or "",
+        "description": e.get("description") or "",
+        "duration": int(e["duration"]) if e.get("duration") else None,
+        "view_count": e.get("view_count"),
+        "timestamp": e.get("timestamp") or e.get("release_timestamp"),
+        "channel_id": e.get("channel_id"),
+        "channel": e.get("channel") or e.get("uploader"),
+        "channel_handle": e.get("uploader_id"),
+    }
+    if complete:
+        item.update({
+            "tags": e.get("tags") or [],
+            "like_count": e.get("like_count"),
+            "upload_date": e.get("upload_date"),
+            "live_status": e.get("live_status"),
+        })
+    return item
+
+
+def search_videos(query: str, limit: int, recent: bool) -> list:
+    """YouTube search without downloading anything (used by self-hosted beat libraries)."""
+    limit = max(1, min(limit, 60))
+    if recent:
+        from urllib.parse import quote_plus
+        url = f"https://www.youtube.com/results?search_query={quote_plus(query)}&sp=CAI%253D"
+        opts = _ydl_opts(extract_flat="in_playlist", playlistend=limit, noplaylist=False)
+    else:
+        url = f"ytsearch{limit}:{query}"
+        opts = _ydl_opts(extract_flat="in_playlist", noplaylist=False)
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    return [x for x in (_flat(e) for e in info.get("entries") or []) if x]
+
+
+def video_details(ids: list) -> list:
+    """Full metadata (description, tags, date) of a few videos, without downloading them."""
+    out = []
+    with yt_dlp.YoutubeDL(_ydl_opts(skip_download=True)) as ydl:
+        for vid in ids[:20]:
+            if not VIDEO_ID.match(str(vid)):
+                continue
+            try:
+                e = ydl.extract_info(f"https://www.youtube.com/watch?v={vid}", download=False)
+            except yt_dlp.utils.DownloadError:
+                continue
+            item = _flat(e, complete=True)
+            if item:
+                out.append(item)
+    return out
+
+
 def safe_filename(name: str) -> str:
     name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "", name)
     name = re.sub(r"\s+", " ", name).strip(" .")
@@ -308,6 +365,7 @@ class Handler(BaseHTTPRequestHandler):
                 "dir": str(OUT_DIR),
                 "chrome_dir": str(CHROME_DIR),
                 "chrome_version": chrome_version(),
+                "features": ["download", "audio", "search", "details"],
             })
         m = re.fullmatch(r"/audio/([A-Za-z0-9_-]{11})", self.path)
         if m and self._origin_ok():
@@ -342,6 +400,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, fetch_audio(video_id))
             if self.path == "/download":
                 return self._send(200, save_to_library(video_id, body.get("bpm"), str(body.get("key_label", ""))))
+            if self.path == "/search":
+                query = str(body.get("query", "")).strip()[:120]
+                if len(query) < 2:
+                    return self._send(400, {"error": "query too short"})
+                return self._send(200, {"entries": search_videos(query, int(body.get("limit") or 40), bool(body.get("recent")))})
+            if self.path == "/details":
+                return self._send(200, {"entries": video_details(list(body.get("ids") or []))})
             if self.path == "/open-folder":
                 OUT_DIR.mkdir(parents=True, exist_ok=True)
                 open_folder(OUT_DIR)
