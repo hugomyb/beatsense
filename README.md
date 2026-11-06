@@ -63,7 +63,7 @@ By default the server only answers the extension. A self-hosted page (for instan
 - Linux: a systemd drop-in, `~/.config/systemd/user/beatsense.service.d/origins.conf` with `[Service]` and `Environment=BEATSENSE_ALLOWED_ORIGINS=https://beats.example.com`, then `systemctl --user daemon-reload && systemctl --user restart beatsense`
 - Windows: `setx BEATSENSE_ALLOWED_ORIGINS "https://beats.example.com"`, then restart the computer
 
-Allowed pages can use `/download`, `/fetch` and `/audio/<id>` like the extension, plus `/search` (`{"query", "limit", "recent"}`) and `/details` (`{"ids": [...]}`), which read YouTube metadata without downloading anything.
+Allowed pages can use `/download`, `/fetch` and `/audio/<id>` like the extension, plus `/search` (`{"query", "limit", "recent"}`), `/details` (`{"ids": [...]}`) and `/channel` (`{"ref", "limit"}`), which read YouTube metadata without downloading anything.
 
 ## Updates
 

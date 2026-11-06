@@ -162,6 +162,39 @@ def search_videos(query: str, limit: int, recent: bool) -> list:
     return [x for x in (_flat(e) for e in info.get("entries") or []) if x]
 
 
+def channel_videos(ref: str, limit: int) -> dict:
+    """A channel's info and latest uploads, without downloading anything."""
+    ref = ref.strip()
+    if ref.startswith("http"):
+        url = re.sub(r"/(videos|shorts|streams|featured|playlists|about)/?$", "", ref.split("?")[0].rstrip("/")) + "/videos"
+    elif re.fullmatch(r"UC[\w-]{22}", ref):
+        url = f"https://www.youtube.com/channel/{ref}/videos"
+    else:
+        url = f"https://www.youtube.com/{ref if ref.startswith('@') else '@' + ref}/videos"
+    opts = _ydl_opts(extract_flat="in_playlist", playlistend=max(1, min(limit, 300)), noplaylist=False)
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    channel_id = info.get("channel_id") or info.get("id")
+    name = info.get("channel") or re.sub(r" - Videos$", "", info.get("title") or "")
+    entries = []
+    for e in info.get("entries") or []:
+        item = _flat(e)
+        if item:
+            item["channel_id"] = item["channel_id"] or channel_id
+            item["channel"] = item["channel"] or name
+            entries.append(item)
+    return {
+        "channel": {
+            "id": channel_id,
+            "name": name,
+            "handle": info.get("uploader_id"),
+            "description": info.get("description") or "",
+            "subscribers": info.get("channel_follower_count"),
+        },
+        "entries": entries,
+    }
+
+
 def video_details(ids: list) -> list:
     """Full metadata (description, tags, date) of a few videos, without downloading them."""
     out = []
@@ -365,7 +398,7 @@ class Handler(BaseHTTPRequestHandler):
                 "dir": str(OUT_DIR),
                 "chrome_dir": str(CHROME_DIR),
                 "chrome_version": chrome_version(),
-                "features": ["download", "audio", "search", "details"],
+                "features": ["download", "audio", "search", "details", "channel"],
             })
         m = re.fullmatch(r"/audio/([A-Za-z0-9_-]{11})", self.path)
         if m and self._origin_ok():
@@ -405,6 +438,11 @@ class Handler(BaseHTTPRequestHandler):
                 if len(query) < 2:
                     return self._send(400, {"error": "query too short"})
                 return self._send(200, {"entries": search_videos(query, int(body.get("limit") or 40), bool(body.get("recent")))})
+            if self.path == "/channel":
+                ref = str(body.get("ref", "")).strip()[:200]
+                if not ref:
+                    return self._send(400, {"error": "missing ref"})
+                return self._send(200, channel_videos(ref, int(body.get("limit") or 30)))
             if self.path == "/details":
                 return self._send(200, {"entries": video_details(list(body.get("ids") or []))})
             if self.path == "/open-folder":
