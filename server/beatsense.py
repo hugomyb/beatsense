@@ -43,6 +43,9 @@ CACHE_TTL = 7 * 24 * 3600
 MAX_DURATION = 20 * 60  # seconds: we refuse multi-hour mixes / livestreams
 
 EXTENSION_ORIGINS = ("moz-extension://", "chrome-extension://")
+# Web pages allowed to drive the server, e.g. a self-hosted beat library:
+# BEATSENSE_ALLOWED_ORIGINS="https://digr.test:8443,https://digr.example.com"
+WEB_ORIGINS = tuple(o.strip().rstrip("/") for o in os.environ.get("BEATSENSE_ALLOWED_ORIGINS", "").split(",") if o.strip())
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
 
@@ -269,12 +272,13 @@ class Handler(BaseHTTPRequestHandler):
         # A browser always sends Origin on a cross-origin POST: a missing origin
         # comes from a local process (curl...), an http(s) origin from a web page.
         origin = self.headers.get("Origin")
-        return origin is None or origin.startswith(EXTENSION_ORIGINS)
+        return origin is None or origin.startswith(EXTENSION_ORIGINS) or origin in WEB_ORIGINS
 
     def _cors(self):
         origin = self.headers.get("Origin", "")
-        if origin.startswith(EXTENSION_ORIGINS):
+        if origin.startswith(EXTENSION_ORIGINS) or origin in WEB_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
 
     def _send(self, status: int, payload: dict):
         body = json.dumps(payload, ensure_ascii=False).encode()
@@ -292,6 +296,9 @@ class Handler(BaseHTTPRequestHandler):
         self._cors()
         self.send_header("Access-Control-Allow-Methods", "GET, POST")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # Chrome "Private Network Access": an https page calling 127.0.0.1 needs this opt-in
+        if self.headers.get("Access-Control-Request-Private-Network") == "true":
+            self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
 
     def do_GET(self):
